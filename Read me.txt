@@ -1,4 +1,5 @@
-First download the dataset given in the word document.
-Then run the lexicon, f_index, and b_index code to create lexicon, forward index and backward index (csv files)
-respectively. Now, run the barrels_l, barrels_f, barrels to create barrels of lexicon, forward index, and
-backward index respectively.
+Download the dataset from the following link:
+https://www.kaggle.com/datasets/fabiochiusano/medium-articles
+
+When you have downloaded the dataset, if it is a zip/compressed file, unzip it.
+Then run the the cleaning(Make chunks of dataset).py file.
