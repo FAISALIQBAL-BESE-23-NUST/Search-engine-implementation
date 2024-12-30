@@ -1,0 +1,123 @@
+import pandas as pd
+import os
+import string
+
+# Function to load lexicon chunks into a dictionary
+def load_lexicon_chunks(lexicon_folder):
+    """
+    Load all lexicon chunks into a dictionary where the key is the word
+    and the value is the word ID.
+    """
+    lexicon_dict = {}
+    
+    # Iterate through all lexicon chunk files
+    for chunk_file in os.listdir(lexicon_folder):
+        if chunk_file.endswith(".csv"):
+            chunk_path = os.path.join(lexicon_folder, chunk_file)
+            chunk_df = pd.read_csv(chunk_path)
+            
+            # Assuming 'word' and 'word_id' columns in each chunk
+            for _, row in chunk_df.iterrows():
+                word = row['word']
+                
+                # Check if the word is a valid string (i.e., not NaN)
+                if isinstance(word, str):
+                    lexicon_dict[word.lower()] = row['word_id']
+                else:
+                    # Skip rows where the word is NaN or not a valid string
+                    print(f"Skipping invalid word: {word}")
+    
+    return lexicon_dict
+
+
+# Function to clean the text by removing punctuation and converting to lowercase
+def clean_text(text):
+    """
+    Clean the text by removing punctuation and converting to lowercase.
+    """
+    text = text.lower()  # Convert to lowercase
+    text = ''.join([char if char not in string.punctuation else ' ' for char in text])  # Remove punctuation
+    return text
+
+
+# Function to create a forward index in chunks
+def create_forward_index(dataset_folder, lexicon_dict, output_folder, chunk_size=1000):
+    """
+    Create a forward index by mapping document IDs to word IDs based on the lexicon and save in chunks.
+    
+    Args:
+        dataset_folder (str): Folder containing the dataset chunks.
+        lexicon_dict (dict): Dictionary containing word-to-ID mapping.
+        output_folder (str): Folder where the forward index chunks will be saved.
+        chunk_size (int): Number of rows per forward index chunk (default is 1000).
+    """
+    forward_index = []
+    doc_id_counter = 1  # Initialize the document ID counter
+    
+    # Process each chunk of the dataset
+    for dataset_file in os.listdir(dataset_folder):
+        if dataset_file.endswith(".csv"):
+            dataset_path = os.path.join(dataset_folder, dataset_file)
+            dataset_df = pd.read_csv(dataset_path)
+
+            # Iterate through each document in the chunk
+            for _, row in dataset_df.iterrows():
+                document_words = []
+                
+                # Combine relevant columns to process: clean_text, clean_title, clean_authors, clean_tags
+                all_text = str(row['clean_text']) + " " + str(row['clean_title']) + " " + str(row['clean_authors']) + " " + str(row['clean_tags'])
+
+                # Clean the combined text and split into words
+                cleaned_text = clean_text(all_text)
+                words = cleaned_text.split()
+                
+                # Map each word to its word ID from the lexicon (if exists)
+                for word in words:
+                    if word in lexicon_dict:
+                        word_id = lexicon_dict[word]
+                        document_words.append(word_id)
+                
+                # Store the document ID (starting from 1) and the corresponding word IDs
+                forward_index.append({'doc_id': doc_id_counter, 'word_ids': document_words})
+
+                # Increment the document ID counter for the next document
+                doc_id_counter += 1
+
+                # If the current forward index size exceeds chunk_size, save and reset
+                if len(forward_index) >= chunk_size:
+                    # Define the chunk file name
+                    chunk_filename = f"forward_index_chunk_{doc_id_counter // chunk_size}.csv"
+                    chunk_path = os.path.join(output_folder, chunk_filename)
+                    
+                    # Save the current chunk to a CSV file
+                    forward_index_df = pd.DataFrame(forward_index)
+                    forward_index_df.to_csv(chunk_path, index=False)
+                    print(f"Forward index chunk saved to {chunk_path}")
+                    
+                    # Reset the forward index list for the next chunk
+                    forward_index = []
+
+    # If any remaining data is left after processing all documents, save it as a final chunk
+    if forward_index:
+        chunk_filename = f"forward_index_chunk_{doc_id_counter // chunk_size + 1}.csv"
+        chunk_path = os.path.join(output_folder, chunk_filename)
+        forward_index_df = pd.DataFrame(forward_index)
+        forward_index_df.to_csv(chunk_path, index=False)
+        print(f"Final forward index chunk saved to {chunk_path}")
+
+
+# Example usage
+if __name__ == "__main__":
+    # Define paths for lexicon chunks and dataset chunks
+    lexicon_folder = "lexicon_chunks"  # Folder containing lexicon chunk CSVs
+    dataset_folder = "extracted_columns"  # Folder containing dataset chunk CSVs
+    output_folder = "forward_chunks"  # Folder where the forward index chunks will be saved
+
+    # Create the output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Load lexicon chunks into a word-to-ID mapping
+    lexicon_dict = load_lexicon_chunks(lexicon_folder)
+    
+    # Create the forward index in chunks and save to files
+    create_forward_index(dataset_folder, lexicon_dict, output_folder, chunk_size=1000)
