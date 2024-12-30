@@ -1,69 +1,90 @@
-import os
+import csv
 import pandas as pd
+from collections import defaultdict
 
-def process_forward_index(dataset_dir, lexicon_dir, output_dir):
-    """
-    Process dataset chunks and their corresponding lexicon chunks to create a forward index.
-    The forward index maps DocIDs (row numbers) to Word IDs for each document.
-    """
-    # Ensure the output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+# Function to read lexicon from a file and create a dictionary (Word -> WordID)
+def read_lexicon(lexicon_file):
+    lexicon = {}
+    with open(lexicon_file, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) == 2:
+                word, word_id = row
+                lexicon[word] = int(word_id)
+    return lexicon
 
-    # List all dataset chunks and lexicon chunks
-    dataset_files = [f for f in os.listdir(dataset_dir) if f.endswith('.csv')]
-    lexicon_files = [f for f in os.listdir(lexicon_dir) if f.endswith('_lexicon.csv')]
-    dataset_files.sort()  # Ensure the files are processed in the correct order
-    lexicon_files.sort()
+# Function to read the dataset from a CSV file
+def read_dataset(dataset_file):
+    return pd.read_csv(dataset_file)
 
-    # Check if the number of dataset chunks matches the number of lexicon chunks
-    if len(dataset_files) != len(lexicon_files):
-        print("Mismatch between dataset chunks and lexicon chunks. Please check the directories.")
-        return
+# Function to generate the forward index
+def generate_forward_index(dataset, lexicon):
+    forward_index = []
 
-    # Process each dataset chunk with its corresponding lexicon
-    for dataset_file, lexicon_file in zip(dataset_files, lexicon_files):
-        print(f"Processing {dataset_file} with {lexicon_file}...")
+    # Iterate through the dataset and process each document
+    for doc_id, row in dataset.iterrows():
+        title, tags, authors, text = row['title'], row['tags'], row['authors'], row['text']
+        
+        # Create a dictionary to store word frequencies in each section
+        word_count = defaultdict(lambda: {'n': 0, 'o': 0, 'p': 0, 'm': 0})
+        
+        # Count occurrences in title
+        for word in title.split():
+            if word in lexicon:
+                word_count[word]['n'] += 1
+        
+        # Count occurrences in authors
+        for word in authors.split():
+            if word in lexicon:
+                word_count[word]['o'] += 1
+        
+        # Count occurrences in tags
+        for word in tags.split():
+            if word in lexicon:
+                word_count[word]['p'] += 1
+        
+        # Count occurrences in text
+        for word in text.split():
+            if word in lexicon:
+                word_count[word]['m'] += 1
+        
+        # Create the details string with WordID:Weight pairs
+        details = []
+        for word, counts in word_count.items():
+            # Calculate the weight
+            weight = 4 * counts['n'] + 3 * counts['o'] + 2 * counts['p'] + counts['m']
+            if weight > 0:  # Only include words with a non-zero weight
+                word_id = lexicon[word]  # Get the word ID from the lexicon
+                details.append(f"{word_id}:{weight}")
+        
+        # Add the row to the forward index
+        forward_index.append([doc_id, ",".join(details)])
 
-        dataset_path = os.path.join(dataset_dir, dataset_file)
-        lexicon_path = os.path.join(lexicon_dir, lexicon_file)
+    return forward_index
 
-        try:
-            # Load the dataset chunk
-            dataset_df = pd.read_csv(dataset_path)
-            if dataset_df.empty:
-                print(f"{dataset_file} is empty. Skipping.")
-                continue
+# Function to write the forward index to a CSV file
+def write_forward_index(forward_index, output_file):
+    with open(output_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["DocID", "Details"])  # Header
+        writer.writerows(forward_index)
 
-            # Load the lexicon chunk and create a word-to-ID mapping
-            lexicon_df = pd.read_csv(lexicon_path)
-            word_to_id = {row["Word"]: row["Word ID"] for _, row in lexicon_df.iterrows()}
+# Main function to read files and process them
+def main(lexicon_file, dataset_file, output_file):
+    # Read the lexicon and dataset
+    lexicon = read_lexicon(lexicon_file)
+    dataset = read_dataset(dataset_file)
 
-            # Create the forward index
-            forward_index = []
-            for doc_id, row in dataset_df.iterrows():
-                # Combine all text data in the row
-                row_text = " ".join([str(row[col]) for col in dataset_df.columns if dataset_df[col].dtype == 'object'])
-                words = row_text.split()
+    # Generate the forward index
+    forward_index = generate_forward_index(dataset, lexicon)
 
-                # Map words to Word IDs
-                word_ids = [word_to_id[word.lower()] for word in words if word.lower() in word_to_id]
-                forward_index.append({"DocID": doc_id + 1, "WordIDs": word_ids})  # DocID starts from 1
+    # Write the forward index to the output CSV
+    write_forward_index(forward_index, output_file)
+    print(f"Forward index generated and saved to {output_file}")
 
-            # Save the forward index to a CSV file
-            forward_df = pd.DataFrame(forward_index)
-            forward_file = os.path.join(output_dir, f"{os.path.splitext(dataset_file)[0]}_forward.csv")
-            forward_df.to_csv(forward_file, index=False)
-            print(f"Forward index for {dataset_file} saved to {forward_file}")
+# Example usage:
+lexicon_file = 'Lexicon.csv'  # Replace with your lexicon file path
+dataset_file = 'ExtractedCleanedColumns.csv'  # Replace with your dataset file path
+output_file = 'FarwordIndex.csv'  # Output file for forward index
 
-        except Exception as e:
-            print(f"Error processing {dataset_file} with {lexicon_file}: {e}")
-
-    print("All forward indices processed and saved.")
-
-# Directories
-dataset_dir = "E:/dsapro/DatasetChunks"
-lexicon_dir = "E:/dsapro/Lexicon"
-output_dir = "E:/dsapro/ForwardIndex"
-
-# Run the function
-process_forward_index(dataset_dir, lexicon_dir, output_dir)
+main(lexicon_file, dataset_file, output_file)
