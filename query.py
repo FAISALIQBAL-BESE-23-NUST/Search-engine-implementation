@@ -2,7 +2,7 @@ import csv
 import sys
 
 # Increase CSV field size limit
-csv.field_size_limit(sys.maxsize)  # Increase field size limit to handle large files
+csv.field_size_limit(10000000)  # Increase field size limit to handle large files
 
 # Function to read the lexicon
 def read_lexicon(lexicon_file):
@@ -100,7 +100,7 @@ def main():
     lexicon_file = 'Lexicon.csv'
     inverted_index_file = 'InvertedIndex.csv'
     forward_index_file = 'ForwardIndex.csv'
-    dataset_file = 'ExtractedCleanedColumns.csv'
+    dataset_file = 'CleanedSubDataset.csv'
 
     # Load data
     print("Loading lexicon...")
