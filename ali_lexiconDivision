@@ -1,0 +1,77 @@
+import pandas as pd
+import os
+
+def split_lexicon_into_chunks(lexicon_file, output_folder):
+    """
+    Split the lexicon into chunks based on the first letter of the words.
+    The chunks are saved in separate CSV files.
+
+    Args:
+        lexicon_file (str): Path to the lexicon CSV file.
+        output_folder (str): Folder to save the resulting chunks.
+    """
+    # Create output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Load the lexicon CSV file
+    lexicon_df = pd.read_csv(lexicon_file)
+
+    # Check the structure of the lexicon to identify the correct column for words
+    print(lexicon_df.head())  # Debug: to check the first few rows and column names
+
+    # Ensure that the column name containing words is correct
+    if 'word' not in lexicon_df.columns:
+        raise ValueError("The lexicon file does not contain a column named 'word'. Please check the column names.")
+    
+    # Sort lexicon by the word column to process in alphabetical order
+    lexicon_df = lexicon_df.sort_values(by='word')
+
+    # Function to get the chunk for a given word
+    def get_chunk_for_word(word):
+        if word[0].isdigit():  # First chunk for numbers
+            return '0-9'
+        elif 'a' <= word[0] <= 'b':  # Second chunk for words starting with 'a' or 'b'
+            return 'a-b'
+        elif 'c' <= word[0] <= 'd':  # Third chunk for words starting with 'c' or 'd'
+            return 'c-d'
+        elif 'e' <= word[0] <= 'f':  # Fourth chunk for words starting with 'e' or 'f'
+            return 'e-f'
+        elif 'g' <= word[0] <= 'h':  # Fifth chunk for words starting with 'g' or 'h'
+            return 'g-h'
+        elif 'i' <= word[0] <= 'j':  # Sixth chunk for words starting with 'i' or 'j'
+            return 'i-j'
+        elif 'k' <= word[0] <= 'l':  # Seventh chunk for words starting with 'k' or 'l'
+            return 'k-l'
+        elif 'm' <= word[0] <= 'n':  # Eighth chunk for words starting with 'm' or 'n'
+            return 'm-n'
+        elif 'o' <= word[0] <= 'p':  # Ninth chunk for words starting with 'o' or 'p'
+            return 'o-p'
+        elif 'q' <= word[0] <= 'r':  # Tenth chunk for words starting with 'q' or 'r'
+            return 'q-r'
+        elif 's' <= word[0] <= 't':  # Eleventh chunk for words starting with 's' or 't'
+            return 's-t'
+        elif 'u' <= word[0] <= 'v':  # Twelfth chunk for words starting with 'u' or 'v'
+            return 'u-v'
+        elif 'w' <= word[0] <= 'x':  # Thirteenth chunk for words starting with 'w' or 'x'
+            return 'w-x'
+        elif 'y' <= word[0] <= 'z':  # Fourteenth chunk for words starting with 'y' or 'z'
+            return 'y-z'
+        else:
+            return 'other'
+
+    # Create a column for chunk assignment based on the first letter of each word
+    lexicon_df['chunk'] = lexicon_df['word'].apply(lambda x: get_chunk_for_word(str(x)))
+
+    # Save each chunk as a separate CSV file
+    for chunk_name, chunk_df in lexicon_df.groupby('chunk'):
+        output_path = os.path.join(output_folder, f"lexicon_chunk_{chunk_name}.csv")
+        chunk_df.to_csv(output_path, index=False)
+        print(f"Saved chunk: {chunk_name} to {output_path}")
+
+# Example Usage
+if __name__ == "__main__":
+    lexicon_file = "lexicon_with_weights_cleaned.csv"  # Path to the lexicon file
+    output_folder = "lexicon_chunks"  # Folder to save the chunks
+
+    split_lexicon_into_chunks(lexicon_file, output_folder)
