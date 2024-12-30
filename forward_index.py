@@ -26,8 +26,9 @@ def read_dataset(dataset_file):
 def generate_forward_index(dataset, lexicon):
     forward_index = []
 
-    # Iterate through the dataset and process each document
-    for doc_id, row in dataset.iterrows():
+    # Start doc_id from 1
+    for doc_id, row in enumerate(dataset.iterrows(), start=1):  # Set start=1 for DocID to start from 1
+        row = row[1]  # Unwrap the row data from the tuple returned by iterrows()
         title, tags, authors, text = row['title'], row['tags'], row['authors'], row['text']
         
         # Ensure all columns are treated as strings (convert if necessary)
