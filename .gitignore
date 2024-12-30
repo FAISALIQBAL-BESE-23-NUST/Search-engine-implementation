@@ -1,23 +1,4 @@
 
-medium_articles.csv
-DatasetChunks/chunk_1.csv
-DatasetChunks/chunk_10.csv
-DatasetChunks/chunk_2.csv
-DatasetChunks/chunk_3.csv
-DatasetChunks/chunk_4.csv
-DatasetChunks/chunk_6.csv
-DatasetChunks/chunk_5.csv
-DatasetChunks/chunk_7.csv
-DatasetChunks/chunk_8.csv
-DatasetChunks/chunk_9.csv
-Lexiconall/chunk_10_lexicon.csv
-Lexiconall/chunk_1_lexicon.csv
-Lexiconall/chunk_2_lexicon.csv
-Lexiconall/chunk_3_lexicon.csv
-Lexiconall/chunk_4_lexicon.csv
-Lexiconall/chunk_5_lexicon.csv
-Lexiconall/chunk_6_lexicon.csv
-Lexiconall/chunk_7_lexicon.csv
-Lexiconall/chunk_8_lexicon.csv
-Lexiconall/chunk_9_lexicon.csv
 *.csv
+*.csv
+medium_articles.csv
