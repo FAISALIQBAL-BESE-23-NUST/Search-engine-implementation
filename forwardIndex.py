@@ -83,8 +83,8 @@ def main(lexicon_file, dataset_file, output_file):
     print(f"Forward index generated and saved to {output_file}")
 
 # Example usage:
-lexicon_file = 'Lexicon.csv'  # Replace with your lexicon file path
-dataset_file = 'ExtractedCleanedColumns.csv'  # Replace with your dataset file path
-output_file = 'FarwordIndex.csv'  # Output file for forward index
+lexicon_file = 'Lexicon.csv'  
+dataset_file = 'ExtractedCleanedColumns.csv'  
+output_file = 'FarwordIndex.csv' 
 
 main(lexicon_file, dataset_file, output_file)
