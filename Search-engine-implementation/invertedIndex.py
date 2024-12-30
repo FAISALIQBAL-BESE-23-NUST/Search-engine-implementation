@@ -51,9 +51,9 @@ def create_inverted_index(lexicon_dir, forward_index_dir, output_dir):
     print("All inverted indices processed and saved.")
 
 # Directory paths
-lexicon_directory = "E:/dsapro/Lexicon"
-forward_index_directory = "E:/dsapro/ForwardIndex"
-output_directory = "E:/dsapro/InvertedIndex2"
+lexicon_directory = "Lexiconall"
+forward_index_directory = "ForwardIndex"
+output_directory = "InvertedIndex"
 
 # Run the function
 create_inverted_index(lexicon_directory, forward_index_directory, output_directory)
