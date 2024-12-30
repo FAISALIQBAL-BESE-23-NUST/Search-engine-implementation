@@ -1,59 +1,79 @@
-import os
+import csv
 import pandas as pd
+import re
 from collections import defaultdict
 
-def create_inverted_index(lexicon_dir, forward_index_dir, output_dir):
-    # Ensure the output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+# Function to read lexicon from a file and create a dictionary (Word -> WordID)
+def read_lexicon(lexicon_file):
+    lexicon = {}
+    with open(lexicon_file, 'r', encoding='utf-8', errors='ignore') as f:  # Specify encoding and error handling
+        reader = csv.reader(f)
+        next(reader)  # Skip the header row (if present)
+        for row in reader:
+            if len(row) == 2:
+                word, word_id = row
+                try:
+                    # Try to convert WordID to an integer
+                    lexicon[word] = int(word_id)
+                except ValueError:
+                    print(f"Skipping invalid row: {row}")  # Handle invalid rows gracefully
+    return lexicon
 
-    # List all lexicon and forward index files
-    lexicon_files = sorted([f for f in os.listdir(lexicon_dir) if f.endswith('_lexicon.csv')])
-    forward_files = sorted([f for f in os.listdir(forward_index_dir) if f.endswith('_forward.csv')])
+# Function to read the dataset from a CSV file
+def read_dataset(dataset_file):
+    return pd.read_csv(dataset_file)
 
-    # Process each chunk
-    for lexicon_file, forward_file in zip(lexicon_files, forward_files):
-        print(f"Processing {lexicon_file} with {forward_file}...")
+# Function to generate an inverted index
+def generate_inverted_index(dataset, lexicon):
+    inverted_index = defaultdict(list)
+    
+    # Process each document
+    for doc_id, row in dataset.iterrows():
+        title, tags, authors, text = row['title'], row['tags'], row['authors'], row['text']
+        
+        # Combine all fields to process the entire document text
+        full_text = f"{title} {tags} {authors} {text}"
+        
+        # Split the text into words and clean each word
+        words = full_text.split()
+        
+        # Normalize words by removing non-alphabetic characters
+        for word in words:
+            # Clean the word by removing non-alphabetical characters
+            cleaned_word = re.sub(r'[^a-zA-Z]', '', word).lower()  # Remove non-alphabetical chars and lower the case
+            
+            # If the cleaned word exists in the lexicon, add the document ID to the inverted index
+            if cleaned_word in lexicon:
+                word_id = lexicon[cleaned_word]
+                if doc_id not in inverted_index[word_id]:
+                    inverted_index[word_id].append(doc_id)
+    
+    return inverted_index
 
-        # Read the lexicon file
-        lexicon_path = os.path.join(lexicon_dir, lexicon_file)
-        lexicon_df = pd.read_csv(lexicon_path)
-        word_ids = lexicon_df["Word ID"].tolist()
+# Function to save the inverted index to a CSV file
+def write_inverted_index(inverted_index, output_file):
+    with open(output_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["WordID", "DocIDs"])  # Header
+        for word_id, doc_ids in inverted_index.items():
+            # Convert doc_ids list to a comma-separated string
+            writer.writerow([word_id, ",".join(map(str, doc_ids))])
 
-        # Initialize inverted index
-        inverted_index = defaultdict(set)  # Use a set to avoid duplicate DocIDs
+# Main function to read files and process them
+def main(lexicon_file, dataset_file, output_file):
+    # Read the lexicon and dataset
+    lexicon = read_lexicon(lexicon_file)
+    dataset = read_dataset(dataset_file)
 
-        # Read the forward index file
-        forward_path = os.path.join(forward_index_dir, forward_file)
-        forward_df = pd.read_csv(forward_path)
+    # Generate the inverted index
+    inverted_index = generate_inverted_index(dataset, lexicon)
 
-        # Build the inverted index
-        for _, row in forward_df.iterrows():
-            doc_id = row["DocID"]
-            word_ids_in_doc = eval(row["WordIDs"])  # Convert string back to list
-            for word_id in word_ids_in_doc:
-                inverted_index[word_id].add(doc_id)  # Add doc_id to the set
+    # Write the inverted index to the output CSV
+    write_inverted_index(inverted_index, output_file)
+    print(f"Inverted index generated and saved to {output_file}")
 
-        # Prepare the inverted index data for saving
-        inverted_data = {
-            "Word ID": [],
-            "Document IDs": []
-        }
-        for word_id in sorted(inverted_index.keys()):
-            inverted_data["Word ID"].append(word_id)
-            inverted_data["Document IDs"].append(list(inverted_index[word_id]))  # Convert set back to list
 
-        # Save the inverted index to a CSV file
-        inverted_df = pd.DataFrame(inverted_data)
-        output_file = os.path.join(output_dir, f"{os.path.splitext(lexicon_file)[0]}_inverted.csv")
-        inverted_df.to_csv(output_file, index=False)
-        print(f"Inverted index for {lexicon_file} saved to {output_file}")
-
-    print("All inverted indices processed and saved.")
-
-# Directory paths
-lexicon_directory = "E:/dsapro/Lexicon"
-forward_index_directory = "E:/dsapro/ForwardIndex"
-output_directory = "E:/dsapro/InvertedIndex2"
-
-# Run the function
-create_inverted_index(lexicon_directory, forward_index_directory, output_directory)
+lexicon_file = 'Lexicon.csv'  
+dataset_file = 'ExtractedCleanedColumns.csv'  
+output_file = 'InvertedIndex.csv'  
+main(lexicon_file, dataset_file, output_file)
