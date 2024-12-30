@@ -98,4 +98,4 @@ def main(lexicon_file, dataset_file, output_file):
 lexicon_file = 'Lexicon.csv'  
 dataset_file = 'ExtractedCleanedColumns.csv'  
 output_file = 'ForwardIndex.csv'
-main(lexicon_file, dataset_file, output_file)
+main(lexicon_file, dataset_file, output_file) 
