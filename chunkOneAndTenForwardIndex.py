@@ -43,9 +43,9 @@ def reprocess_forward_index(dataset_dir, lexicon_dir, output_dir, specific_pairs
             print(f"Error reprocessing {dataset_file} with {lexicon_file}: {e}")
 
 # Directories
-dataset_dir = "E:/dsapro/DatasetChunks"
-lexicon_dir = "E:/dsapro/Lexicon"
-output_dir = "E:/dsapro/ForwardIndex"
+dataset_dir = "DatasetChunks"
+lexicon_dir = "Lexiconall"
+output_dir = "ForwardIndex"
 
 # Pairs of files to reprocess
 specific_pairs = [
