@@ -1,9 +1,9 @@
 import pandas as pd
 
 # Input file large dataset
-input_file = "E:\dsapro\Dataset.csv"  
+input_file = "E:/dsapro/Dataset.csv"  
 output_file = "Dataset50Krows.csv" 
- 
+
 # Read the first 50,000 rows of the CSV
 try:
     df = pd.read_csv(input_file, nrows=50000)
