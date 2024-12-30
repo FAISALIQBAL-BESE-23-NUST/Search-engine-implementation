@@ -3,7 +3,7 @@ import re
 
 def clean_text_column(text):
     """
-    Clean a text column by replacing punctuation marks with spaces.
+    Clean a text column by replacing punctuation marks with spaces and converting to lowercase.
 
     Parameters:
     text (str): The text to clean.
@@ -13,12 +13,12 @@ def clean_text_column(text):
     """
     if pd.isnull(text):
         return text
-    # Replace punctuation with spaces
-    return re.sub(r'[\W_]+', ' ', text)
+    # Replace punctuation with spaces and convert to lowercase
+    return re.sub(r'[\W_]+', ' ', text).lower()
 
 def clean_list_column(column):
     """
-    Clean a column containing lists represented as strings by removing punctuation marks.
+    Clean a column containing lists represented as strings by removing punctuation marks and converting to lowercase.
 
     Parameters:
     column (str): The column value to clean.
@@ -28,20 +28,21 @@ def clean_list_column(column):
     """
     if pd.isnull(column):
         return column
-    # Remove brackets and clean individual elements
+    # Remove brackets, clean individual elements, and convert to lowercase
     column = re.sub(r'[\[\]\'"\s]+', ' ', column)
-    return re.sub(r'[\W_]+', ' ', column)
+    return re.sub(r'[\W_]+', ' ', column).lower()
 
-def clean_dataset(input_file, output_file):
+def clean_and_extract_columns(input_file, output_file, extracted_file):
     """
-    Load a CSV file, clean specific columns, and save the cleaned dataset.
+    Load a CSV file, clean specific columns, save the cleaned dataset, and extract cleaned columns to a separate file.
 
     Parameters:
     input_file (str): Path to the input CSV file.
     output_file (str): Path to save the cleaned CSV file.
+    extracted_file (str): Path to save the extracted cleaned columns.
 
     Returns:
-    pd.DataFrame: The cleaned DataFrame.
+    pd.DataFrame: The cleaned and extracted DataFrame.
     """
     # Load the first 50,000 rows
     df = pd.read_csv(input_file, nrows=50000)
@@ -62,11 +63,16 @@ def clean_dataset(input_file, output_file):
     # Save the cleaned dataset
     df.to_csv(output_file, index=False)
 
-    return df
+    # Extract and save cleaned columns
+    extracted_df = df[['title', 'tags', 'authors', 'text']]
+    extracted_df.to_csv(extracted_file, index=False)
+
+    return extracted_df
 
 # Example usage
 input_csv = "first_50000_rows.csv"  # Replace with your input file path
 output_csv = "cleaned_dataset.csv"  # Replace with your desired output file path
+extracted_csv = "extracted_cleaned_columns.csv"  # Replace with your desired extracted file path
 
-# Clean the dataset
-cleaned_data = clean_dataset(input_csv, output_csv)
+# Clean the dataset and extract columns
+extracted_data = clean_and_extract_columns(input_csv, output_csv, extracted_csv)
