@@ -9,6 +9,7 @@ def read_lexicon(lexicon_file):
     with open(lexicon_file, 'r', encoding='utf-8', errors='ignore') as f:  # Specify encoding and error handling
         reader = csv.reader(f)
         next(reader)  # Skip the header row (if present)
+        print("Reading lexicon file...")
         for row in reader:
             if len(row) == 2:
                 word, word_id = row
@@ -17,18 +18,26 @@ def read_lexicon(lexicon_file):
                     lexicon[word] = int(word_id)
                 except ValueError:
                     print(f"Skipping invalid row: {row}")  # Handle invalid rows gracefully
+        print(f"Lexicon loaded with {len(lexicon)} words.")
     return lexicon
 
 # Function to read the dataset from a CSV file
 def read_dataset(dataset_file):
-    return pd.read_csv(dataset_file)
+    print(f"Reading dataset from {dataset_file}...")
+    dataset = pd.read_csv(dataset_file)
+    print(f"Dataset loaded with {len(dataset)} documents.")
+    return dataset
 
 # Function to generate an inverted index
 def generate_inverted_index(dataset, lexicon):
     inverted_index = defaultdict(list)
+    print("Generating inverted index...")
     
     # Process each document
     for doc_id, row in dataset.iterrows():
+        if doc_id % 100 == 0:  # Print progress every 100 documents processed
+            print(f"Processing document {doc_id + 1} of {len(dataset)}")
+
         title, tags, authors, text = row['title'], row['tags'], row['authors'], row['text']
         
         # Combine all fields to process the entire document text
@@ -48,16 +57,19 @@ def generate_inverted_index(dataset, lexicon):
                 if doc_id not in inverted_index[word_id]:
                     inverted_index[word_id].append(doc_id)
     
+    print(f"Inverted index generated with {len(inverted_index)} unique words.")
     return inverted_index
 
 # Function to save the inverted index to a CSV file
 def write_inverted_index(inverted_index, output_file):
+    print(f"Saving inverted index to {output_file}...")
     with open(output_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["WordID", "DocIDs"])  # Header
         for word_id, doc_ids in inverted_index.items():
             # Convert doc_ids list to a comma-separated string
             writer.writerow([word_id, ",".join(map(str, doc_ids))])
+    print(f"Inverted index saved to {output_file}.")
 
 # Main function to read files and process them
 def main(lexicon_file, dataset_file, output_file):
@@ -70,7 +82,6 @@ def main(lexicon_file, dataset_file, output_file):
 
     # Write the inverted index to the output CSV
     write_inverted_index(inverted_index, output_file)
-    print(f"Inverted index generated and saved to {output_file}")
 
 
 lexicon_file = 'Lexicon.csv'  
