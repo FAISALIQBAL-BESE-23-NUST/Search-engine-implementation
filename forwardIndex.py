@@ -61,9 +61,9 @@ def process_forward_index(dataset_dir, lexicon_dir, output_dir):
     print("All forward indices processed and saved.")
 
 # Directories
-dataset_dir = "DatasetChunks"
-lexicon_dir = "Lexiconall"
-output_dir = "ForwardIndex"
+dataset_dir = "E:/dsapro/DatasetChunks"
+lexicon_dir = "E:/dsapro/Lexicon"
+output_dir = "E:/dsapro/ForwardIndex"
 
 # Run the function
 process_forward_index(dataset_dir, lexicon_dir, output_dir)

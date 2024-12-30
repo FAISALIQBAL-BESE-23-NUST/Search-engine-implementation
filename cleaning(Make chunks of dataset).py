@@ -73,7 +73,7 @@ def process_dataset(input_file, chunk_size, output_dir):
 # Run the script
 if __name__ == "__main__":
     # Input parameters
-    input_file = "medium_articles.csv"  # dataset field path
+    input_file = "Dataset.csv"  # dataset fiel path
     chunk_size = 5000 # Adjust chunk size as needed
     output_dir = "DatasetChunks"
 

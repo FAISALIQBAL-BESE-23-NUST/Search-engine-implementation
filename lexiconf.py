@@ -75,10 +75,10 @@ def process_chunks_and_save(directory, output_directory):
     print("All chunks processed and saved.")
 
 # Directory containing the chunk files
-input_directory = "DatasetChunks"
+input_directory = "E:/dsapro/DatasetChunks"
 
 # Directory to save the lexicons
-output_directory = "Lexiconall"
+output_directory = "E:/dsapro/Lexiconall"
 
 # Run the function
 process_chunks_and_save(input_directory, output_directory)
