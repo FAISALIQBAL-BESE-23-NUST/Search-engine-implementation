@@ -1,102 +1,61 @@
-import csv
 import pandas as pd
-from collections import defaultdict
+import nltk
+import string
+import sys
 
-# Function to read lexicon from a file and create a dictionary (Word -> WordID)
-def read_lexicon(lexicon_file):
-    lexicon = {}
-    with open(lexicon_file, 'r', encoding='utf-8') as f:  # Set encoding to utf-8
-        reader = csv.reader(f)
-        next(reader)  # Skip the header row (if present)
-        for row in reader:
-            if len(row) == 2:
-                word, word_id = row
-                try:
-                    # Try to convert WordID to an integer
-                    lexicon[word] = int(word_id)
-                except ValueError:
-                    print(f"Skipping invalid row: {row}")  # Handle invalid rows gracefully
-    return lexicon
+# Load datasets
+main_dataset = pd.read_csv('extracted_cleaned_columns.csv')  # Columns: title, author, tags, text
+derived_lexicon = pd.read_csv('derived_lexicon.csv')  # Columns: word, id
 
-# Function to read the dataset from a CSV file
-def read_dataset(dataset_file):
-    return pd.read_csv(dataset_file)
+# Preprocessing and weights
+column_weights = {'title': 4, 'authors': 3, 'tags': 2, 'text': 1}
 
-# Function to generate the forward index
-def generate_forward_index(dataset, lexicon):
-    forward_index = []
+# Function to preprocess text (tokenize, remove punctuation, lowercase)
+def preprocess_text(text):
+    translator = str.maketrans('', '', string.punctuation)
+    tokens = nltk.word_tokenize(text.translate(translator).lower())
+    return tokens
 
-    # Start doc_id from 1
-    for doc_id, row in enumerate(dataset.iterrows(), start=1):  # Set start=1 for DocID to start from 1
-        row = row[1]  # Unwrap the row data from the tuple returned by iterrows()
-        title, tags, authors, text = row['title'], row['tags'], row['authors'], row['text']
-        
-        # Ensure all columns are treated as strings (convert if necessary)
-        title = str(title) if isinstance(title, str) else ""
-        tags = str(tags) if isinstance(tags, str) else ""
-        authors = str(authors) if isinstance(authors, str) else ""
-        text = str(text) if isinstance(text, str) else ""
+# Create word-to-ID mapping
+word_to_id = dict(zip(derived_lexicon['word'].str.lower(), derived_lexicon['id']))
 
-        # Create a dictionary to store word frequencies in each section
-        word_count = defaultdict(lambda: {'n': 0, 'o': 0, 'p': 0, 'm': 0})
-        
-        # Count occurrences in title
-        for word in title.split():
-            if word in lexicon:
-                word_count[word]['n'] += 1
-        
-        # Count occurrences in authors
-        for word in authors.split():
-            if word in lexicon:
-                word_count[word]['o'] += 1
-        
-        # Count occurrences in tags
-        for word in tags.split():
-            if word in lexicon:
-                word_count[word]['p'] += 1
-        
-        # Count occurrences in text
-        for word in text.split():
-            if word in lexicon:
-                word_count[word]['m'] += 1
-        
-        # Create the details string with WordID:Weight pairs
-        details = []
-        for word, counts in word_count.items():
-            # Calculate the weight
-            weight = 4 * counts['n'] + 3 * counts['o'] + 2 * counts['p'] + counts['m']
-            if weight > 0:  # Only include words with a non-zero weight
-                if word in lexicon:  # Ensure the word is in lexicon before adding
-                    word_id = lexicon[word]  # Get the word ID from the lexicon
-                    details.append(f"{word_id}:{weight}")
-        
-        # Add the row to the forward index
-        forward_index.append([doc_id, ",".join(details)])
+# Progress display function
+def show_progress(current, total):
+    progress = (current / total) * 100
+    sys.stdout.write(f"\rProcessing: {progress:.2f}% complete")
+    sys.stdout.flush()
 
-    return forward_index
+# Build the forward index
+forward_index = []
+total_rows = len(main_dataset)
 
-# Function to write the forward index to a CSV file
-def write_forward_index(forward_index, output_file):
-    with open(output_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["DocID", "Details"])  # Header
-        writer.writerows(forward_index)
+for idx, row in main_dataset.iterrows():
+    word_weights = {}
 
-# Main function to read files and process them
-def main(lexicon_file, dataset_file, output_file):
-    # Read the lexicon and dataset
-    lexicon = read_lexicon(lexicon_file)
-    dataset = read_dataset(dataset_file)
+    # Process each column and calculate weighted frequencies
+    for column, weight in column_weights.items():
+        if pd.notna(row[column]):  # Ensure the column isn't NaN
+            tokens = preprocess_text(row[column])
+            for token in tokens:
+                if token in word_to_id:  # Check if word exists in derived_lexicon
+                    word_id = word_to_id[token]
+                    if word_id not in word_weights:
+                        word_weights[word_id] = 0
+                    word_weights[word_id] += weight  # Add weighted frequency
 
-    # Generate the forward index
-    forward_index = generate_forward_index(dataset, lexicon)
+    # Construct the "Details" column
+    details = ",".join([f"{word_id}:{weight}" for word_id, weight in word_weights.items()])
 
-    # Write the forward index to the output CSV
-    write_forward_index(forward_index, output_file)
-    print(f"Forward index generated and saved to {output_file}")
+    # Append to forward index
+    forward_index.append({'DocID': idx + 1, 'Details': details})
 
-# Example usage:
-lexicon_file = 'derived_lexicon.csv'  
-dataset_file = 'extracted_cleaned_columns.csv'  
-output_file = 'ForwardIndex2.csv'
-main(lexicon_file, dataset_file, output_file)
+    # Update progress
+    show_progress(idx + 1, total_rows)
+
+# Convert forward index to DataFrame
+forward_index_df = pd.DataFrame(forward_index)
+
+# Save the forward index to a CSV file
+forward_index_df.to_csv('ForwardIndex.csv', index=False)
+
+print("\nForward Index created successfully and saved as 'ForwardIndex.csv'")
