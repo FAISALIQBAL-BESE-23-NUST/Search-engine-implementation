@@ -88,9 +88,9 @@ def fetch_top_documents(word, lexicon, inverted_index, forward_index, dataset_fi
     top_docs = []
     for doc_id, weight in doc_weights[:5]:
         # Adjusting doc_id to fetch the (doc_id + 2)th row from the dataset
-        row_num = doc_id + 2  # Add 2 to the doc_id to match the dataset row
+        row_num = doc_id +1  # Add 2 to the doc_id to match the dataset row
         if row_num <= len(dataset):  # Ensure row_num is within bounds
-            link = dataset[row_num - 1]['url']  # Fetch the URL (adjust for 0-based index)
+            link = dataset[row_num]['url']  # Fetch the URL (adjust for 0-based index)
             top_docs.append((link, weight))
 
     return top_docs
