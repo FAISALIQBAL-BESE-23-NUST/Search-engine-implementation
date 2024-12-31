@@ -2,7 +2,8 @@ import csv
 from math import log10
 
 # Increase CSV field size limit
-csv.field_size_limit(10000000)  # Increase field size limit to handle large files
+# Increase field size limit to handle large files
+csv.field_size_limit(10000000)  
 
 # List of stop words to filter out
 STOP_WORDS = {
