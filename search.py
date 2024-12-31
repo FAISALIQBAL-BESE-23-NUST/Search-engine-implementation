@@ -15,7 +15,7 @@ derived_lexicon = pd.read_csv('derived_lexicon.csv')  # Assuming columns are ['w
 # Load the inverted index
 inverted_index_file = 'inverted_index.csv'
 # Load the forward index
-forward_index_file = 'ForwardIndex2.csv'
+forward_index_file = 'ForwardIndex.csv'
 
 # Load the main dataset for fetching URLs
 main_dataset_file = 'first_50000_rows.csv'
