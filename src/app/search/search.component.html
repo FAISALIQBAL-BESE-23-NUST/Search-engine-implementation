@@ -1,0 +1,49 @@
+<div class="container mt-5">
+    <!-- Search Engine Header -->
+    <h1 class="text-primary text-center mb-3">SearchWright</h1>
+    <p class="text-muted text-center mb-4">Find what you're looking for instantly</p>
+  
+    <!-- Search Bar with Clear Button -->
+    <div class="d-flex justify-content-center mb-4">
+      <input 
+        type="text" 
+        class="form-control w-50 me-2" 
+        placeholder="Enter your search query" 
+        [(ngModel)]="searchQuery"
+        (keyup)="onSearch()"
+        id="search-input"
+      >
+      <button class="btn btn-primary" (click)="onSearch()">Search</button>
+    </div>
+  
+    <!-- Loading Spinner -->
+    <div *ngIf="isLoading" class="text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  
+    <!-- Results Section -->
+    <div *ngIf="!isLoading && results.length" class="mt-5">
+      <h2 class="text-secondary">Search Results:</h2>
+      <div class="row" id="results-list">
+        <!-- Displaying result cards dynamically -->
+        <div class="col-md-4 mb-4" *ngFor="let result of results">
+          <div class="card">
+            <img src="https://via.placeholder.com/150" class="card-img-top" alt="result-image">
+            <div class="card-body">
+              <h5 class="card-title">{{ result.title }}</h5>
+              <p class="card-text">{{ result.description }}</p>
+              <a [href]="result.link" class="btn btn-primary">Read More</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- No Results Message -->
+    <div *ngIf="!isLoading && !results.length" class="text-center mt-4">
+      <p class="text-danger">No results found for your query. Please try again with different keywords.</p>
+    </div>
+  </div>
+  
