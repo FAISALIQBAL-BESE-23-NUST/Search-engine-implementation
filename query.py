@@ -1,8 +1,15 @@
 import csv
-import sys
+from math import log10
 
 # Increase CSV field size limit
 csv.field_size_limit(10000000)  # Increase field size limit to handle large files
+
+# List of stop words to filter out
+STOP_WORDS = {
+    "a", "an", "the", "is", "am", "are", "and", "or", "of", "on", "in", "to", 
+    "with", "for", "from", "by", "it", "this", "that", "was", "were", "has", 
+    "have", "had", "be", "not", "as", "at", "but"
+}
 
 # Function to read the lexicon
 def read_lexicon(lexicon_file):
@@ -44,41 +51,52 @@ def read_forward_index(forward_index_file):
                 forward_index[int(doc_id)] = details
     return forward_index
 
-# Function to fetch the links of top 5 documents
-def fetch_top_documents(word, lexicon, inverted_index, forward_index, dataset_file):
-    # Normalize the input word
-    word = word.strip().lower()
-
-    # Step 1: Get Word ID from lexicon
-    if word not in lexicon:
-        print(f"The word '{word}' is not in the lexicon.")
+# Function to fetch the top documents for a multi-word query
+def fetch_top_documents(query, lexicon, inverted_index, forward_index, dataset_file):
+    # Split the query into individual words and remove stop words
+    words = [word.strip().lower() for word in query.split() if word.strip().lower() not in STOP_WORDS]
+    if not words:
+        print("Your query contains only stop words or is empty.")
         return []
 
-    word_id = lexicon[word]
+    # Process each word and calculate cumulative scores for documents
+    doc_scores = {}
+    total_documents = len(forward_index)  # Total number of documents in the dataset
 
-    # Step 2: Get document IDs from inverted index
-    if word_id not in inverted_index:
-        print(f"No documents found for the word '{word}'.")
-        return []
+    for word in words:
+        # Step 1: Get Word ID from lexicon
+        if word not in lexicon:
+            print(f"The word '{word}' is not in the lexicon. Skipping.")
+            continue
+        word_id = lexicon[word]
 
-    doc_ids = inverted_index[word_id]
+        # Step 2: Get document IDs from inverted index
+        if word_id not in inverted_index:
+            print(f"No documents found for the word '{word}'. Skipping.")
+            continue
+        doc_ids = inverted_index[word_id]
 
-    # Step 3: Get weights from the forward index
-    doc_weights = []
-    for doc_id in doc_ids:
-        details = forward_index.get(doc_id, "")
-        if details:
-            # Split the details string to find the word ID and weight pairs
-            pairs = details.split(',')
-            for pair in pairs:
-                wid, weight = map(int, pair.split(':'))
-                if wid == word_id:  # Match the Word ID
-                    doc_weights.append((doc_id, weight))
+        # Step 3: Get weights (term frequencies) from the forward index
+        for doc_id in doc_ids:
+            details = forward_index.get(doc_id, "")
+            if details:
+                # Split the details string to find the word ID and weight pairs
+                pairs = details.split(',')
+                for pair in pairs:
+                    wid, tf = map(int, pair.split(':'))
+                    if wid == word_id:  # Match the Word ID
+                        # Calculate TF-IDF score
+                        idf = log10(total_documents / len(doc_ids))
+                        tf_idf = tf * idf
+                        if doc_id in doc_scores:
+                            doc_scores[doc_id] += tf_idf
+                        else:
+                            doc_scores[doc_id] = tf_idf
 
-    # Step 4: Sort documents by weight in descending order
-    doc_weights.sort(key=lambda x: x[1], reverse=True)
+    # Step 4: Sort documents by their cumulative TF-IDF scores in descending order
+    sorted_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
 
-    # Step 5: Fetch links from the dataset for top 5 documents
+    # Step 5: Fetch links from the dataset for the top documents
     dataset = []
     with open(dataset_file, 'r', encoding='utf-8', errors='ignore') as f:
         reader = csv.DictReader(f)
@@ -86,12 +104,12 @@ def fetch_top_documents(word, lexicon, inverted_index, forward_index, dataset_fi
             dataset.append(row)
 
     top_docs = []
-    for doc_id, weight in doc_weights[:5]:
+    for doc_id, score in sorted_docs[:5]:  # Limit to top 5 results
         # Adjusting doc_id to fetch the (doc_id + 2)th row from the dataset
-        row_num = doc_id 
-        if row_num <= len(dataset):  # Ensure row_num is within bounds
-            link = dataset[row_num]['url']  # Fetch the URL (adjust for 0-based index)
-            top_docs.append((link, weight))
+        row_num = doc_id
+        if row_num < len(dataset):  # Ensure row_num is within bounds
+            link = dataset[row_num]['url']  # Fetch the URL
+            top_docs.append((link, score))
 
     return top_docs
 
@@ -110,20 +128,25 @@ def main():
     print("Loading forward index...")
     forward_index = read_forward_index(forward_index_file)
 
-    # User input
-    word = input("Enter a word to search: ")
+    # Repeated search loop
+    while True:
+        # User input
+        query = input("\nEnter your search query (type 'exit' to quit): ")
+        if query.strip().lower() == "exit":
+            print("Exiting the program. Goodbye!")
+            break
 
-    # Fetch top documents
-    print("Fetching top documents...")
-    top_docs = fetch_top_documents(word, lexicon, inverted_index, forward_index, dataset_file)
+        # Fetch top documents
+        print("Fetching top documents...")
+        top_docs = fetch_top_documents(query, lexicon, inverted_index, forward_index, dataset_file)
 
-    # Display results
-    if not top_docs:
-        print("No results found.")
-    else:
-        print("Top 5 documents:")
-        for link, weight in top_docs:
-            print(f"Link: {link}, Weight: {weight}")
+        # Display results
+        if not top_docs:
+            print("No results found.")
+        else:
+            print("Top documents:")
+            for link, score in top_docs:
+                print(f"Link: {link}, TF-IDF Score: {score:.4f}")
 
 # Run the program
 if __name__ == "__main__":
