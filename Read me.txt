@@ -4,7 +4,7 @@ https://www.kaggle.com/datasets/fabiochiusano/medium-articles
 When you have downloaded the dataset, if it is a zip/compressed file, unzip it.
 Then run the the cleaning(Make chunks of dataset).py file.
 and then run the clean2.py file
-contact @Ali, if the files doesn't run.
+contact fiqbal.bese23seecs@seecs.edu.pk or mhali.bese23seecs@seecs.edu.pk, if the files doesn't run.
 
 Now run the lexicon file, and then the forward index file.
 The forward index file is giving an error, which is that the first chunk of forward index, is processed on the
